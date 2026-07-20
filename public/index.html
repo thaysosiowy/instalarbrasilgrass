@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>BrasilGrass · Planta e Corte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F5F0; --panel:#FFFFFF; --panel-border:#E7EAE2;
+    --ink:#16302A; --ink-soft:#6B7A72; --dark:#16302A; --dark-2:#1E3D34;
+    --green:#3F8F5F; --green-hi:#4EA36C; --green-soft:rgba(63,143,95,0.10);
+    --amber:#C98A3D; --amber-soft:rgba(201,138,61,0.12);
+    --shadow-sm: 0 1px 2px rgba(22,48,42,0.04), 0 1px 1px rgba(22,48,42,0.03);
+    --shadow-md: 0 4px 16px rgba(22,48,42,0.06), 0 1px 3px rgba(22,48,42,0.04);
+    --shadow-lg: 0 12px 32px rgba(22,48,42,0.10);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-size:14.5px;-webkit-font-smoothing:antialiased;}
+  header{background:linear-gradient(135deg,#16302A,#1E3D34);color:#fff;padding:24px 30px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;box-shadow:var(--shadow-md);position:relative;z-index:2;}
+  header h1{font-family:'Space Grotesk',sans-serif;font-size:21px;margin:0;letter-spacing:0.2px;font-weight:700;}
+  header span{color:#AFC9BC;font-size:13px;}
+  .wrap{max-width:1440px;margin:0 auto;padding:26px 22px;display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:start;}
+  @media (max-width:1000px){.wrap{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--panel-border);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:var(--shadow-sm);transition:box-shadow .2s ease;}
+  .card:hover{box-shadow:var(--shadow-md);}
+  .card h2{font-family:'Space Grotesk',sans-serif;font-size:13.5px;text-transform:uppercase;letter-spacing:0.07em;color:var(--green);margin:0 0 14px 0;display:flex;justify-content:space-between;align-items:center;font-weight:700;}
+  .card h2 .tag{background:var(--amber-soft);color:#8a5a1f;font-size:10px;padding:4px 8px;border-radius:20px;text-transform:none;letter-spacing:0;font-family:'Inter',sans-serif;font-weight:600;}
+  label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;margin-top:12px;font-weight:500;}
+  input[type=number],input[type=text],select{width:100%;padding:9px 11px;border:1.5px solid var(--panel-border);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13px;background:#FCFCFA;color:var(--ink);transition:border-color .15s ease, box-shadow .15s ease;}
+  input[type=text]{font-family:'Inter',sans-serif;}
+  input:focus,select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);}
+  .tpl-btns{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px;}
+  .tpl-btn{flex:1 1 auto;padding:9px 12px;border-radius:10px;border:1.5px solid var(--panel-border);background:#FCFCFA;color:var(--ink);font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all .15s ease;}
+  .tpl-btn:hover{border-color:var(--green);color:var(--dark-2);}
+  .tpl-btn.active{background:var(--dark);border-color:var(--dark);color:#fff;box-shadow:var(--shadow-sm);}
+  button.action{width:100%;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--green-hi),var(--green));color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;cursor:pointer;margin-top:12px;transition:transform .12s ease, box-shadow .12s ease;box-shadow:var(--shadow-sm);}
+  button.action:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+  button.action:active{transform:translateY(0);}
+  button.ghost{background:#fff;border:1.5px solid var(--panel-border);color:var(--ink-soft);box-shadow:none;}
+  button.ghost:hover{border-color:var(--green);color:var(--dark-2);box-shadow:var(--shadow-sm);}
+  button.small{width:auto;padding:8px 14px;font-size:12px;margin-top:8px;}
+  .rm-btn{background:none;border:none;color:#C0605A;cursor:pointer;font-size:16px;line-height:1;transition:transform .12s ease;}
+  .rm-btn:hover{transform:scale(1.15);}
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:4px;}
+  .stat{background:#FAFBF7;border:1px solid var(--panel-border);border-radius:12px;padding:12px 14px;transition:border-color .15s ease;}
+  .stat:hover{border-color:var(--green);}
+  .stat .num{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--dark-2);}
+  .stat .lbl{font-size:10.5px;color:var(--ink-soft);margin-top:3px;font-weight:500;}
+  .stat.amber .num{color:var(--amber);}
+  .insumo-card{display:flex;justify-content:space-between;align-items:center;background:#FAFBF7;border:1px solid var(--panel-border);border-radius:12px;padding:13px 15px;margin-top:11px;transition:border-color .15s ease;}
+  .insumo-card:hover{border-color:var(--amber);}
+  .insumo-card .name{font-weight:700;font-size:13.5px;}
+  .insumo-card .cfg{font-size:10.5px;color:var(--ink-soft);margin-top:4px;display:flex;gap:8px;align-items:center;}
+  .insumo-card .cfg input{width:56px;padding:3px 5px;font-size:11px;display:inline-block;}
+  .insumo-card .result{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:19px;color:#8a5a1f;background:var(--amber-soft);padding:9px 16px;border-radius:10px;white-space:nowrap;}
+  .note{font-size:11.5px;color:var(--ink-soft);margin-top:10px;line-height:1.55;}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--ink-soft);flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .sw{width:12px;height:12px;border-radius:4px;display:inline-block;}
+  .modelo-row{display:grid;grid-template-columns:1.3fr 0.7fr 0.9fr 22px;gap:7px;margin-top:8px;align-items:center;}
+  .modelo-row input{padding:7px 8px;font-size:11.5px;}
+  .modelo-list-row{display:grid;grid-template-columns:1.3fr 0.7fr 0.9fr 22px;gap:7px;padding:8px 2px;font-size:11.5px;border-bottom:1px solid #F0F1EC;align-items:center;}
+  #work-svg{width:100%;height:auto;background:#FAFBF8;border-radius:12px;cursor:crosshair;margin-top:10px;border:1.5px solid var(--panel-border);}
+  .roll-block{background:#FAFBF7;border:1px solid var(--panel-border);border-radius:12px;padding:13px;margin-top:11px;}
+  .roll-block .roll-title{font-weight:700;font-size:12.5px;color:var(--dark-2);margin-bottom:6px;}
+  .roll-block .roll-item{display:flex;justify-content:space-between;font-size:12px;font-family:'JetBrains Mono',monospace;padding:3px 0;}
+  .roll-block .roll-note{font-size:10.5px;color:var(--ink-soft);padding:1px 0 3px 0;}
+  .piso-btns{display:flex;gap:7px;}
+  .piso-btn{flex:1;padding:10px 8px;border-radius:10px;border:1.5px solid var(--panel-border);background:#FCFCFA;cursor:pointer;font-size:12.5px;font-family:'Inter',sans-serif;font-weight:600;transition:all .15s ease;}
+  .piso-btn:hover{border-color:var(--dark);}
+  .piso-btn.active{background:var(--dark);color:#fff;border-color:var(--dark);box-shadow:var(--shadow-sm);}
+  .area-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .area-tab{padding:9px 14px;border-radius:24px;border:1.5px solid var(--panel-border);background:#FCFCFA;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;transition:all .15s ease;}
+  .area-tab:hover{border-color:var(--green);}
+  .area-tab.active{background:var(--dark);color:#fff;border-color:var(--dark);box-shadow:var(--shadow-sm);}
+  .area-tab .x{opacity:0.6;font-size:12px;}
+  .area-tab.add{background:var(--green-soft);border-color:var(--green);color:var(--dark-2);font-weight:700;}
+  .planta-clean-wrap{margin-top:10px;border-radius:14px;overflow:hidden;border:1px solid var(--panel-border);box-shadow:var(--shadow-md);}
+  @media print{header,.no-print{display:none !important;}.wrap{grid-template-columns:1fr;padding:0;}.card{box-shadow:none;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BrasilGrass</h1>
+  <span>Planta de instalação + cálculo de corte e venda</span>
+</header>
+
+<div class="wrap">
+
+  <!-- COLUNA PRINCIPAL: GEOMETRIA -->
+  <div>
+    <div class="card no-print">
+      <h2>Catálogo de modelos <span class="tag">compartilhado com a equipe</span></h2>
+      <div class="modelo-row">
+        <input type="text" id="new-modelo-nome" placeholder="Nome (ex: Prime 30mm)">
+        <input type="number" step="0.1" id="new-modelo-largura" placeholder="Largura (m)">
+        <input type="number" step="0.5" id="new-modelo-comprimento" placeholder="Comp. rolo (m)">
+        <span></span>
+      </div>
+      <button class="action small" id="add-modelo-btn">+ cadastrar modelo</button>
+      <div id="modelo-list" style="margin-top:10px"></div>
+      <label>Modelo ativo (vale pra todos os espaços deste orçamento)</label>
+      <select id="modelo-ativo"></select>
+      <div class="note" id="modelo-info"></div>
+    </div>
+
+    <div class="card no-print">
+      <h2>Espaços do cliente <span class="tag">sobra de um vira aproveitamento no outro</span></h2>
+      <div class="area-tabs" id="area-tabs"></div>
+
+      <label>Nome do espaço</label>
+      <input type="text" id="area-nome-input">
+      <label>Foto do espaço (opcional)</label>
+      <input type="file" id="area-photo-input" accept="image/*">
+      <div class="note" style="margin-top:8px">Clique pra marcar cada canto do espaço, na ordem, e digite a medida real de cada lateral direto em cima da linha. Isto aqui é só o rascunho de trabalho — a planta bonita pro cliente é gerada mais abaixo.</div>
+      <svg id="work-svg" viewBox="0 0 400 280"></svg>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="action ghost small" id="area-close-btn">Fechar forma</button>
+        <button class="action ghost small" id="area-reset-btn">Reiniciar desenho</button>
+      </div>
+      <div id="area-status" class="note"></div>
+
+      <label style="margin-top:16px">Orientação do corte</label>
+      <div class="tpl-btns">
+        <button class="tpl-btn active" data-eixo="auto">Automático (recomendado)</button>
+        <button class="tpl-btn" data-eixo="horizontal">Forçar: a partir da parede</button>
+        <button class="tpl-btn" data-eixo="vertical">Forçar: a partir da lateral</button>
+      </div>
+      <div class="note" id="eixo-status"></div>
+    </div>
+
+    <div class="card">
+      <h2>Planta profissional <span class="tag">pra enviar ao cliente</span></h2>
+      <div id="plantas-limpas"></div>
+      <button class="action ghost no-print" onclick="window.print()">🖨️ Imprimir / exportar PDF</button>
+    </div>
+  </div>
+
+  <!-- COLUNA RESULTADO: VENDA + INSUMOS -->
+  <div>
+    <div class="card">
+      <h2>Resultado da venda <span class="tag">todos os espaços</span></h2>
+      <div class="summary-grid">
+        <div class="stat" style="grid-column:1/3"><div class="num" id="s-modelo">—</div><div class="lbl">Modelo escolhido</div></div>
+        <div class="stat amber"><div class="num" id="s-rolos">—</div><div class="lbl">Rolos fechados</div></div>
+        <div class="stat"><div class="num" id="s-vendida-linear">—</div><div class="lbl">Quantidade vendida (m)</div></div>
+        <div class="stat"><div class="num" id="s-emendas">—</div><div class="lbl">Nº de emendas</div></div>
+        <div class="stat"><div class="num" id="s-area-vendida">—</div><div class="lbl">Área vendida (m²)</div></div>
+        <div class="stat" style="grid-column:1/3"><div class="num" id="s-area-solicitada">—</div><div class="lbl">Área solicitada (m²)</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>O que vender ao cliente</h2>
+      <div id="plano-corte"></div>
+    </div>
+
+    <div class="card">
+      <h2>Insumos</h2>
+      <label>Tipo de piso</label>
+      <div class="piso-btns">
+        <button class="piso-btn active" data-piso="terra">Terra (ganchos)</button>
+        <button class="piso-btn" data-piso="concreto">Concreto (cola geral)</button>
+      </div>
+
+      <div id="insumo-ganchos-block">
+        <div class="insumo-card">
+          <div>
+            <div class="name">Ganchos</div>
+            <div class="cfg">un/m perímetro <input type="number" step="0.5" id="rate-gancho" value="1"> · un/kit <input type="number" step="1" id="kit-gancho" value="5"></div>
+          </div>
+          <div class="result" id="res-gancho">—</div>
+        </div>
+      </div>
+
+      <div class="insumo-card">
+        <div>
+          <div class="name" id="cola-label">Cola de contato (emendas)</div>
+          <div class="cfg">130g/m de fita <span id="cola-extra-cfg"></span></div>
+        </div>
+        <div class="result" id="res-cola">—</div>
+      </div>
+
+      <div class="insumo-card">
+        <div>
+          <div class="name">Fita Tape</div>
+          <div class="cfg">vendida por metro, arredondada pra cima</div>
+        </div>
+        <div class="result" id="res-fita">—</div>
+      </div>
+      <div class="note" id="insumo-base">Perímetro total: —</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const S = { modelos:[], modeloAtivoId:null, areas:[], activeAreaId:null, nextAreaId:1, nextStripId:1, piso:'terra' };
+
+function capSplit(st, rollWidth){
+  if(st.bandWidth >= rollWidth-1e-9) return 1;
+  let k = Math.max(1, Math.floor((rollWidth+1e-9)/st.bandWidth));
+  const MAX_SPLIT = 3;
+  const MIN_SEGMENT = 0.5; // metros — abaixo disso não compensa criar mais uma emenda
+  if(k>MAX_SPLIT) k = MAX_SPLIT;
+  while(k>=2 && (st.length/k) < MIN_SEGMENT) k--;
+  return k;
+}
+function letraTapete(i){ let s=''; i++; while(i>0){ const r=(i-1)%26; s=String.fromCharCode(65+r)+s; i=Math.floor((i-1)/26); } return s; }
+function roundUpHalf(v){ return Math.ceil(v/0.5 - 1e-9)*0.5; }
+
+function pointInPolygon(px,py,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i].x, yi=poly[i].y, xj=poly[j].x, yj=poly[j].y;
+    const intersect = ((yi>py)!==(yj>py)) && (px < (xj-xi)*(py-yi)/(yj-yi)+xi);
+    if(intersect) inside=!inside;
+  }
+  return inside;
+}
+function perimeter(poly){
+  let p=0;
+  for(let i=0;i<poly.length;i++){ const j=(i+1)%poly.length; const dx=poly[j].x-poly[i].x, dy=poly[j].y-poly[i].y; p += Math.sqrt(dx*dx+dy*dy); }
+  return p;
+}
+function polyBounds(poly){
+  const xs=poly.map(p=>p.x), ys=poly.map(p=>p.y);
+  return {minX:Math.min(...xs),maxX:Math.max(...xs),minY:Math.min(...ys),maxY:Math.max(...ys)};
+}
+function computeStrips(poly, rollWidth, direction){
+  const b = polyBounds(poly);
+  let axisMin,axisMax,lengthMin,lengthMax;
+  if(direction==='horizontal'){ axisMin=b.minY; axisMax=b.maxY; lengthMin=b.minX; lengthMax=b.maxX; }
+  else { axisMin=b.minX; axisMax=b.maxX; lengthMin=b.minY; lengthMax=b.maxY; }
+  const totalAxis = axisMax-axisMin;
+  const n = Math.max(1, Math.ceil(totalAxis/rollWidth - 1e-9));
+  const strips=[]; const sampleCount=160, crossSamples=14;
+  for(let i=0;i<n;i++){
+    const bandStart = axisMin + i*rollWidth;
+    const bandEnd = Math.min(bandStart+rollWidth, axisMax);
+    const bandWidth = bandEnd-bandStart;
+    let minL=Infinity, maxL=-Infinity;
+    for(let c=0;c<crossSamples;c++){
+      const crossPos = bandStart + bandWidth*(c+0.5)/crossSamples;
+      for(let s=0;s<=sampleCount;s++){
+        const lengthPos = lengthMin + (lengthMax-lengthMin)*s/sampleCount;
+        const px = direction==='horizontal'? lengthPos : crossPos;
+        const py = direction==='horizontal'? crossPos : lengthPos;
+        if(pointInPolygon(px,py,poly)){ if(lengthPos<minL) minL=lengthPos; if(lengthPos>maxL) maxL=lengthPos; }
+      }
+    }
+    if(maxL>minL){
+      const raw = maxL-minL;
+      const length = Math.ceil(raw/0.05)*0.05;
+      strips.push({id:S.nextStripId++, bandStart, bandEnd, bandWidth, lengthStart:minL, length});
+    }
+  }
+  return strips;
+}
+function chooseBestDirection(poly, rollWidth){
+  const h = computeStrips(poly, rollWidth, 'horizontal');
+  const v = computeStrips(poly, rollWidth, 'vertical');
+  const lenH = h.reduce((s,st)=>s+st.length,0);
+  const lenV = v.reduce((s,st)=>s+st.length,0);
+  if(h.length !== v.length) return h.length < v.length ? {dir:'horizontal', strips:h} : {dir:'vertical', strips:v};
+  return lenH <= lenV ? {dir:'horizontal', strips:h} : {dir:'vertical', strips:v};
+}
+// nudge inward to avoid boundary floating-point misses at the exact min/max of the polygon
+function crossingsAtAxis(vertices, pixelPoints, axisDim, axisValueRaw, lengthDim){
+  const axisValue = axisValueRaw;
+  const n = vertices.length;
+  const crossings=[];
+  for(let i=0;i<n;i++){
+    const j=(i+1)%n;
+    const a=vertices[i], b=vertices[j];
+    const aAxis=a[axisDim], bAxis=b[axisDim];
+    if((aAxis<=axisValue && bAxis>axisValue) || (bAxis<=axisValue && aAxis>axisValue)){
+      const t=(axisValue-aAxis)/(bAxis-aAxis);
+      const realLength = a[lengthDim] + t*(b[lengthDim]-a[lengthDim]);
+      const px = pixelPoints[i].x + t*(pixelPoints[j].x-pixelPoints[i].x);
+      const py = pixelPoints[i].y + t*(pixelPoints[j].y-pixelPoints[i].y);
+      crossings.push({realLength, px, py});
+    }
+  }
+  crossings.sort((c1,c2)=>c1.realLength-c2.realLength);
+  return crossings;
+}
+function nudgedCross(vertices, pixelPoints, axisDim, axisValue, lengthDim, dir){
+  // dir: -1 nudge down, +1 nudge up, tries exact first then nudges if empty
+  let c = crossingsAtAxis(vertices, pixelPoints, axisDim, axisValue, lengthDim);
+  if(c.length<2) c = crossingsAtAxis(vertices, pixelPoints, axisDim, axisValue + dir*1e-3, lengthDim);
+  if(c.length<2) c = crossingsAtAxis(vertices, pixelPoints, axisDim, axisValue - dir*1e-3, lengthDim);
+  return c;
+}
+function lerpPt(a,b,t){ return {px:a.px+(b.px-a.px)*t, py:a.py+(b.py-a.py)*t}; }
+
+// ---------- AREAS ----------
+function newArea(){
+  return { id:S.nextAreaId++, nome:'Espaço '+(S.areas.length+1), photo:null, points:[], edges:[], closed:false, vertices:[], strips:[], direction:'auto', resolvedDirection:'horizontal',
+    manualMode:false, manualSubMode:'linha', manualLines:[], manualLabels:[], manualPending:null, manualTapetes:[], nextManualId:1 };
+}
+function getActiveArea(){ return S.areas.find(a=>a.id===S.activeAreaId); }
+function addArea(){
+  const a = newArea();
+  S.areas.push(a);
+  S.activeAreaId = a.id;
+  renderAreaTabs(); renderAreaWorkspace(); renderAll();
+}
+function removeArea(id){
+  S.areas = S.areas.filter(a=>a.id!==id);
+  if(S.activeAreaId===id) S.activeAreaId = S.areas.length ? S.areas[0].id : null;
+  renderAreaTabs(); renderAreaWorkspace(); renderAll();
+}
+function renderAreaTabs(){
+  const el = document.getElementById('area-tabs');
+  el.innerHTML = S.areas.map(a=>`
+    <div class="area-tab ${a.id===S.activeAreaId?'active':''}" data-select-area="${a.id}">
+      ${a.nome} <span class="x" data-remove-area="${a.id}">✕</span>
+    </div>`).join('') + `<div class="area-tab add" id="add-area-btn">+ novo espaço</div>`;
+  el.querySelectorAll('[data-select-area]').forEach(t=>{
+    t.addEventListener('click', e=>{
+      if(e.target.dataset.removeArea) return;
+      S.activeAreaId = parseInt(t.dataset.selectArea);
+      renderAreaTabs(); renderAreaWorkspace();
+    });
+  });
+  el.querySelectorAll('[data-remove-area]').forEach(x=>{
+    x.addEventListener('click', e=>{ e.stopPropagation(); removeArea(parseInt(x.dataset.removeArea)); });
+  });
+  document.getElementById('add-area-btn').addEventListener('click', addArea);
+}
+
+// ---------- WORKSPACE (rascunho) ----------
+const workSvg = document.getElementById('work-svg');
+function snapAngle(dx,dy){ let angle=Math.atan2(dy,dx); const step=Math.PI/12; return Math.round(angle/step)*step; }
+function snapCardinal(dx,dy){ let angle=Math.atan2(dy,dx); const step=Math.PI/2; return Math.round(angle/step)*step; }
+function renderAreaWorkspace(){
+  const area = getActiveArea();
+  const nomeInput = document.getElementById('area-nome-input');
+  const photoInput = document.getElementById('area-photo-input');
+  if(!area){ nomeInput.value=''; nomeInput.disabled=true; photoInput.disabled=true; workSvg.innerHTML=''; document.getElementById('area-status').textContent='Crie um espaço pra começar.'; return; }
+  nomeInput.disabled=false; photoInput.disabled=false;
+  nomeInput.value = area.nome;
+  document.querySelectorAll('.tpl-btns [data-eixo]').forEach(b=>b.classList.toggle('active', b.dataset.eixo===area.direction));
+  document.getElementById('area-status').textContent = area.statusMsg || '';
+  renderWorkSvg(area);
+  renderCloseOptions(area.closed ? area : null);
+}
+document.getElementById('area-nome-input').addEventListener('input', e=>{
+  const area=getActiveArea(); if(!area) return;
+  area.nome = e.target.value; renderAreaTabs(); renderAll();
+});
+document.getElementById('area-photo-input').addEventListener('change', e=>{
+  const area=getActiveArea(); if(!area) return;
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{ area.photo = reader.result; renderWorkSvg(area); };
+  reader.readAsDataURL(file);
+});
+function renderWorkSvg(area){
+  if(!area){ workSvg.innerHTML=''; return; }
+  let s='';
+  if(area.photo){ s += `<image href="${area.photo}" x="0" y="0" width="400" height="280" preserveAspectRatio="none"/>`; }
+  else {
+    for(let gx=0; gx<=400; gx+=20) s+=`<line x1="${gx}" y1="0" x2="${gx}" y2="280" stroke="#EEF0EA" stroke-width="1"/>`;
+    for(let gy=0; gy<=280; gy+=20) s+=`<line x1="0" y1="${gy}" x2="400" y2="${gy}" stroke="#EEF0EA" stroke-width="1"/>`;
+  }
+  for(let i=0;i<area.points.length-1;i++){
+    s+=`<line x1="${area.points[i].x}" y1="${area.points[i].y}" x2="${area.points[i+1].x}" y2="${area.points[i+1].y}" stroke="#3F8F5F" stroke-width="3"/>`;
+  }
+  if(area.closed){
+    const first=area.points[0], last=area.points[area.points.length-1];
+    s+=`<line x1="${last.x}" y1="${last.y}" x2="${first.x}" y2="${first.y}" stroke="#3F8F5F" stroke-width="3"/>`;
+  }
+  area.points.forEach((p,i)=>{ s+=`<circle cx="${p.x}" cy="${p.y}" r="5" fill="${i===0?'#C98A3D':'#16302A'}" stroke="#fff" stroke-width="1.5"/>`; });
+  const isLast = idx => idx===area.edges.length-1;
+  area.edges.forEach((edge,idx)=>{
+    const a=area.points[edge.from], b=area.points[edge.to];
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    if(edge.mode==='auto'){
+      s += `<foreignObject x="${mx-34}" y="${my-22}" width="70" height="46">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="text-align:center;font-family:'Inter',sans-serif;">
+          <div style="font-size:9.5px;padding:3px 4px;border:1.5px dashed #C98A3D;border-radius:5px;background:#fff;color:#8a5a1f;">auto (fecha sozinho)</div>
+          <button data-modebtn="${idx}" style="margin-top:3px;font-size:9px;padding:2px 6px;border-radius:5px;border:1px solid #ccc;background:#fff;cursor:pointer;">mudar</button>
+        </div>
+      </foreignObject>`;
+      return;
+    }
+    const val = edge.length!=null ? edge.length : '';
+    const modeLabel = edge.mode==='reto' ? '∟reto' : '↗livre';
+    s += `<foreignObject x="${mx-32}" y="${my-24}" width="68" height="48">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="text-align:center;">
+        <input type="number" step="0.05" class="edge-width-input" data-edge="${idx}" value="${val}" placeholder="largura m"
+          style="width:56px;font-size:11px;padding:3px 4px;border:1.5px solid #3F8F5F;border-radius:5px;text-align:center;font-family:'JetBrains Mono',monospace;background:#fff;"/>
+        <button data-modebtn="${idx}" style="margin-top:2px;font-size:9px;padding:2px 6px;border-radius:5px;border:1px solid #3F8F5F;background:${edge.mode==='reto'?'#16302A':'#fff'};color:${edge.mode==='reto'?'#fff':'#16302A'};cursor:pointer;">${modeLabel}</button>
+      </div>
+    </foreignObject>`;
+  });
+  workSvg.innerHTML = s;
+  workSvg.querySelectorAll('[data-modebtn]').forEach(btn=>{
+    btn.addEventListener('click', ev=>{
+      ev.preventDefault();
+      const idx = parseInt(btn.dataset.modebtn);
+      const edge = area.edges[idx];
+      const last = isLast(idx);
+      const order = last ? ['livre','reto','auto'] : ['livre','reto'];
+      const next = order[(order.indexOf(edge.mode)+1)%order.length];
+      edge.mode = next;
+      renderWorkSvg(area);
+      tryFinalize(area);
+    });
+  });
+}
+workSvg.addEventListener('click', e=>{
+  const area=getActiveArea(); if(!area || area.closed) return;
+  if(e.target.closest('foreignObject')) return;
+  const rect = workSvg.getBoundingClientRect();
+  const x = (e.clientX-rect.left)/rect.width*400;
+  const y = (e.clientY-rect.top)/rect.height*280;
+  if(area.points.length>=3){
+    const first=area.points[0];
+    if(Math.hypot(x-first.x,y-first.y)<14){ closeArea(area); return; }
+  }
+  area.points.push({x,y});
+  if(area.points.length>=2){
+    const i=area.points.length-2;
+    const a=area.points[i], b=area.points[i+1];
+    area.edges.push({angleRaw:Math.atan2(b.y-a.y,b.x-a.x), length:null, from:i, to:i+1, mode:'livre'});
+  }
+  renderWorkSvg(area);
+});
+function closeArea(area){
+  if(area.points.length<3){ area.statusMsg='Marque ao menos 3 pontos antes de fechar a forma.'; renderAreaWorkspace(); return; }
+  area.closed = true;
+  const n = area.points.length;
+  const p0=area.points[0], pl=area.points[n-1];
+  area.edges.push({angleRaw:Math.atan2(p0.y-pl.y,p0.x-pl.x), length:null, from:n-1, to:0, mode:'livre'});
+  area.statusMsg = 'Digite a largura de cada trecho. Clique no botão embaixo da largura pra alternar entre "livre" (respeita o ângulo do seu traço) e "reto" (força 90° com o trecho anterior).';
+  renderWorkSvg(area);
+  document.getElementById('area-status').textContent = area.statusMsg;
+}
+document.getElementById('area-close-btn').addEventListener('click', ()=>{ const a=getActiveArea(); if(a) closeArea(a); });
+document.getElementById('area-reset-btn').addEventListener('click', ()=>{
+  const area=getActiveArea(); if(!area) return;
+  area.points=[]; area.edges=[]; area.closed=false; area.vertices=[]; area.strips=[]; area.statusMsg='';
+  renderWorkSvg(area); document.getElementById('area-status').textContent=''; renderAll();
+});
+workSvg.addEventListener('input', e=>{
+  if(!e.target.classList.contains('edge-width-input')) return;
+  const area=getActiveArea(); if(!area) return;
+  const idx=parseInt(e.target.dataset.edge);
+  area.edges[idx].length = parseFloat(e.target.value)||null;
+  tryFinalize(area);
+});
+function angularDiff(a,b){ let d=(a-b)%(Math.PI*2); if(d>Math.PI) d-=Math.PI*2; if(d<-Math.PI) d+=Math.PI*2; return Math.abs(d); }
+function tryFinalize(area){
+  if(!area.closed || area.edges.length<3) return;
+  const needed = area.edges.filter(e=>e.mode!=='auto');
+  if(!needed.every(e=>e.length && e.length>0)){
+    const missing = needed.filter(e=>!e.length||e.length<=0).length;
+    area.statusMsg = 'Faltam '+missing+' largura(s) pra gerar a planta.';
+    document.getElementById('area-status').textContent = area.statusMsg;
+    return;
+  }
+  // resolve ângulos em sequência: 'reto' depende do ângulo já resolvido do trecho anterior
+  const resolvedAngle = [];
+  for(let i=0;i<area.edges.length;i++){
+    const edge = area.edges[i];
+    if(edge.mode==='auto'){ resolvedAngle.push(null); continue; }
+    if(edge.mode==='reto'){
+      if(i===0 || resolvedAngle[i-1]==null){
+        const step=Math.PI/2; resolvedAngle.push(Math.round(edge.angleRaw/step)*step);
+      } else {
+        const base = resolvedAngle[i-1];
+        const optA = base+Math.PI/2, optB = base-Math.PI/2;
+        resolvedAngle.push(angularDiff(edge.angleRaw,optA) <= angularDiff(edge.angleRaw,optB) ? optA : optB);
+      }
+    } else { // livre — respeita o ângulo desenhado, só limpa ruído fino
+      const step=Math.PI/72; resolvedAngle.push(Math.round(edge.angleRaw/step)*step);
+    }
+  }
+  const pts=[{x:0,y:0}];
+  for(let i=0;i<area.edges.length;i++){
+    const edge = area.edges[i];
+    const prev=pts[pts.length-1];
+    if(edge.mode==='auto'){
+      const closeVec = {x:pts[0].x-prev.x, y:pts[0].y-prev.y};
+      edge.length = Math.hypot(closeVec.x, closeVec.y);
+      edge.angle = Math.atan2(closeVec.y, closeVec.x);
+      pts.push({x:pts[0].x, y:pts[0].y});
+    } else {
+      edge.angle = resolvedAngle[i];
+      pts.push({x:prev.x+edge.length*Math.cos(edge.angle), y:prev.y+edge.length*Math.sin(edge.angle)});
+    }
+  }
+  const gap = Math.hypot(pts[pts.length-1].x-pts[0].x, pts[pts.length-1].y-pts[0].y);
+  area.vertices = pts.slice(0, pts.length-1);
+  recalcAreaStrips(area);
+  const hasAuto = area.edges.some(e=>e.mode==='auto');
+  area.statusMsg = (!hasAuto && gap>0.3) ? '⚠️ Fechamento com diferença de '+gap.toFixed(2)+'m — confira as larguras ou marque um trecho como "auto" pra fechar sozinho.' : '✓ Planta gerada, sempre em plano (sem distorção de perspectiva).';
+  document.getElementById('area-status').textContent = area.statusMsg;
+}
+function recalcAreaStrips(area){
+  const modelo = S.modelos.find(m=>m.id===S.modeloAtivoId);
+  const rollWidth = modelo ? modelo.largura : 2;
+  if(area.vertices.length<3){ area.strips=[]; renderAll(); return; }
+  if(area.direction==='auto'){
+    const best = chooseBestDirection(area.vertices, rollWidth);
+    area.strips = best.strips; area.resolvedDirection = best.dir;
+  } else {
+    area.strips = computeStrips(area.vertices, rollWidth, area.direction);
+    area.resolvedDirection = area.direction;
+  }
+  renderWorkSvg(area);
+  renderAll();
+}
+document.querySelectorAll('.tpl-btns [data-eixo]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const area=getActiveArea(); if(!area) return;
+    document.querySelectorAll('.tpl-btns [data-eixo]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    area.direction = btn.dataset.eixo;
+    if(area.vertices.length>=3) recalcAreaStrips(area);
+  });
+});
+
+function backgroundAndScale(area){
+  if(area.photo){
+    return { viewW:400, viewH:280, pixelPoints:area.points, bgMarkup:`<image href="${area.photo}" x="0" y="0" width="400" height="280" preserveAspectRatio="none"/>` };
+  }
+  const pts = area.vertices;
+  const b = polyBounds(pts);
+  const spanX=(b.maxX-b.minX)||1, spanY=(b.maxY-b.minY)||1;
+  const pad=50, viewW=640, viewH=Math.max(320, Math.min(520, viewW*spanY/spanX + 2*pad));
+  const availW=viewW-2*pad, availH=viewH-2*pad;
+  const scale = Math.min(availW/spanX, availH/spanY);
+  const ox = pad - b.minX*scale + (availW-spanX*scale)/2;
+  const oy = pad - b.minY*scale + (availH-spanY*scale)/2;
+  const X = x=> ox+x*scale, Y = y=> oy+y*scale;
+  const scaledPts = pts.map(p=>({x:X(p.x),y:Y(p.y)}));
+  const pointsAttr = pts.map(p=>`${X(p.x)},${Y(p.y)}`).join(' ');
+  const bgMarkup = `<defs><linearGradient id="grassGrad${area.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2f6b45"/><stop offset="100%" stop-color="#1e4a30"/></linearGradient></defs>
+    <rect width="${viewW}" height="${viewH}" fill="#F4F5EF"/>
+    <polygon points="${pointsAttr}" fill="url(#grassGrad${area.id})" stroke="#0F2A1C" stroke-width="3"/>`;
+  return { viewW, viewH, pixelPoints:scaledPts, bgMarkup };
+}
+function renderPlantasLimpas(){
+  const wrap = document.getElementById('plantas-limpas');
+  const valid = S.areas.filter(a=>a.vertices.length>=3);
+  if(valid.length===0){ wrap.innerHTML = '<div class="note">Feche a forma de um espaço e preencha as larguras pra gerar a planta profissional.</div>'; return; }
+  const modelo = S.modelos.find(m=>m.id===S.modeloAtivoId);
+  const rollWidth = modelo ? modelo.largura : 2;
+
+  wrap.innerHTML = valid.map(area=>{
+    let inner;
+    if(area.manualMode){
+      const {viewW,viewH,bgMarkup} = backgroundAndScale(area);
+      let s = `<svg id="plant-svg-${area.id}" viewBox="0 0 ${viewW} ${viewH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;cursor:crosshair;">${bgMarkup}`;
+      area.manualLines.forEach(ln=>{ s += `<line x1="${ln.x1}" y1="${ln.y1}" x2="${ln.x2}" y2="${ln.y2}" stroke="${area.photo?'#ffffff':'#ffffff'}" stroke-width="2.5" stroke-dasharray="8 6"/>`; });
+      area.manualLabels.forEach(lb=>{ s += `<text x="${lb.x}" y="${lb.y}" font-size="15" fill="${area.photo?'#fff':'#fff'}" font-family="Space Grotesk,sans-serif" font-weight="700" text-anchor="middle" style="paint-order:stroke;stroke:#0F2A1C;stroke-width:3px;">${lb.letter}</text>`; });
+      if(area.manualPending){ s += `<circle cx="${area.manualPending.x}" cy="${area.manualPending.y}" r="4" fill="#C98A3D"/>`; }
+      s += '</svg>';
+      inner = s;
+    } else {
+      const pts = area.vertices;
+      if(area.photo){
+        const viewW=400, viewH=280;
+        let s = `<svg viewBox="0 0 ${viewW} ${viewH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+          <image href="${area.photo}" x="0" y="0" width="${viewW}" height="${viewH}" preserveAspectRatio="none"/>`;
+        const pointsAttr = area.points.map(p=>`${p.x},${p.y}`).join(' ');
+        s += `<polygon points="${pointsAttr}" fill="rgba(63,143,95,0.18)" stroke="#EAF6EC" stroke-width="2.5"/>`;
+        s += buildStripOverlay(area, rollWidth, pts, area.points, '#ffffff', '#0F2A1C', '#ffffff');
+        area.edges.forEach(edge=>{
+          const a=area.points[edge.from], b2=area.points[edge.to];
+          const mx=(a.x+b2.x)/2, my=(a.y+b2.y)/2;
+          s += `<g><rect x="${mx-24}" y="${my-10}" width="48" height="19" rx="5" fill="#0F2A1C" opacity="0.88"/>
+          <text x="${mx}" y="${my+4}" font-size="10.5" fill="#fff" font-family="JetBrains Mono,monospace" text-anchor="middle" font-weight="600">${edge.length.toFixed(2)}m</text></g>`;
+        });
+        s += '</svg>';
+        inner = s;
+      } else {
+        const b = polyBounds(pts);
+        const spanX=(b.maxX-b.minX)||1, spanY=(b.maxY-b.minY)||1;
+        const pad=50, viewW=640, viewH=Math.max(320, Math.min(520, viewW*spanY/spanX + 2*pad));
+        const availW=viewW-2*pad, availH=viewH-2*pad;
+        const scale = Math.min(availW/spanX, availH/spanY);
+        const ox = pad - b.minX*scale + (availW-spanX*scale)/2;
+        const oy = pad - b.minY*scale + (availH-spanY*scale)/2;
+        const X = x=> ox+x*scale, Y = y=> oy+y*scale;
+        const scaledPts = pts.map(p=>({x:X(p.x),y:Y(p.y)}));
+        let s = `<svg viewBox="0 0 ${viewW} ${viewH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+          <defs><linearGradient id="grassGrad${area.id}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#2f6b45"/><stop offset="100%" stop-color="#1e4a30"/>
+          </linearGradient></defs>
+          <rect width="${viewW}" height="${viewH}" fill="#F4F5EF"/>`;
+        const pointsAttr = pts.map(p=>`${X(p.x)},${Y(p.y)}`).join(' ');
+        s += `<polygon points="${pointsAttr}" fill="url(#grassGrad${area.id})" stroke="#0F2A1C" stroke-width="3"/>`;
+        s += buildStripOverlay(area, rollWidth, pts, scaledPts, '#ffffff', '#ffffff', '#0F2A1C');
+        area.edges.forEach(edge=>{
+          const a=pts[edge.from], b2=pts[edge.to];
+          const mx=(X(a.x)+X(b2.x))/2, my=(Y(a.y)+Y(b2.y))/2;
+          s += `<g><rect x="${mx-26}" y="${my-11}" width="52" height="20" rx="5" fill="#0F2A1C" opacity="0.85"/>
+          <text x="${mx}" y="${my+4}" font-size="11" fill="#fff" font-family="JetBrains Mono,monospace" text-anchor="middle" font-weight="600">${edge.length.toFixed(2)}m</text></g>`;
+        });
+        s += '</svg>';
+        inner = s;
+      }
+    }
+
+    const manualControls = area.manualMode ? `
+      <div class="tpl-btns no-print" style="margin-top:8px">
+        <button class="tpl-btn ${area.manualSubMode==='linha'?'active':''}" data-manual-sub="linha" data-area="${area.id}">✏️ Linha de corte</button>
+        <button class="tpl-btn ${area.manualSubMode==='rotulo'?'active':''}" data-manual-sub="rotulo" data-area="${area.id}">🔤 Rótulo (A,B,C)</button>
+        <button class="tpl-btn ghost" data-manual-clear="${area.id}">Limpar marcações</button>
+      </div>
+      <div class="note no-print">Modo linha: clique em 2 pontos pra traçar um corte. Modo rótulo: clique uma vez pra colocar a próxima letra.</div>
+      <div id="manual-tapetes-${area.id}" class="no-print"></div>
+    ` : '';
+
+    return `<div style="margin-bottom:18px" data-area-block="${area.id}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-weight:700;font-size:13px">${area.nome}</div>
+        <button class="tpl-btn small no-print" data-toggle-manual="${area.id}" style="margin:0;width:auto">${area.manualMode?'🤖 Usar automático':'✏️ Editar manualmente'}</button>
+      </div>
+      <div class="planta-clean-wrap">${inner}</div>
+      ${manualControls}
+    </div>`;
+  }).join('');
+
+  valid.forEach(area=>{
+    if(area.manualMode) setupManualCanvas(area);
+  });
+  document.querySelectorAll('[data-toggle-manual]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const area = S.areas.find(a=>a.id===parseInt(btn.dataset.toggleManual));
+      if(!area) return;
+      area.manualMode = !area.manualMode;
+      renderPlantasLimpas();
+      renderAll();
+    });
+  });
+}
+function setupManualCanvas(area){
+  const svg = document.getElementById('plant-svg-'+area.id);
+  if(svg){
+    svg.addEventListener('click', e=>{
+      const rect = svg.getBoundingClientRect();
+      const vb = svg.viewBox.baseVal;
+      const x = (e.clientX-rect.left)/rect.width*vb.width;
+      const y = (e.clientY-rect.top)/rect.height*vb.height;
+      if(area.manualSubMode==='linha'){
+        if(!area.manualPending){ area.manualPending = {x,y}; }
+        else { area.manualLines.push({id:area.nextManualId++, x1:area.manualPending.x, y1:area.manualPending.y, x2:x, y2:y}); area.manualPending=null; }
+      } else {
+        const letter = letraTapete(area.manualLabels.length);
+        area.manualLabels.push({id:area.nextManualId++, x, y, letter});
+      }
+      renderPlantasLimpas();
+    });
+  }
+  document.querySelectorAll(`[data-manual-sub][data-area="${area.id}"]`).forEach(btn=>{
+    btn.addEventListener('click', ()=>{ area.manualSubMode = btn.dataset.manualSub; area.manualPending=null; renderPlantasLimpas(); });
+  });
+  const clearBtn = document.querySelector(`[data-manual-clear="${area.id}"]`);
+  if(clearBtn) clearBtn.addEventListener('click', ()=>{ area.manualLines=[]; area.manualLabels=[]; area.manualPending=null; renderPlantasLimpas(); });
+
+  const tbl = document.getElementById('manual-tapetes-'+area.id);
+  if(tbl){
+    tbl.innerHTML = `<table style="margin-top:10px"><thead><tr><th>Tapete</th><th>Largura (m)</th><th>Comprimento (m)</th><th>Área</th><th></th></tr></thead>
+      <tbody>${area.manualTapetes.map((t,idx)=>`<tr>
+        <td>${letraTapete(idx)}</td>
+        <td><input type="number" step="0.05" value="${t.largura}" data-mt="${t.id}" data-field="largura"></td>
+        <td><input type="number" step="0.05" value="${t.comprimento}" data-mt="${t.id}" data-field="comprimento"></td>
+        <td>${(t.largura*t.comprimento).toFixed(2)} m²</td>
+        <td><button class="rm-btn" data-rmt="${t.id}">✕</button></td>
+      </tr>`).join('')}</tbody></table>
+      <button class="action ghost small" data-addt="${area.id}">+ adicionar tapete</button>`;
+    tbl.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', e=>{
+        const id=parseInt(e.target.dataset.mt), field=e.target.dataset.field;
+        const t = area.manualTapetes.find(x=>x.id===id);
+        if(t){ t[field]=parseFloat(e.target.value)||0; renderAll(); }
+      });
+    });
+    tbl.querySelectorAll('[data-rmt]').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const id=parseInt(e.target.dataset.rmt);
+        area.manualTapetes = area.manualTapetes.filter(x=>x.id!==id);
+        setupManualCanvas(area); renderAll();
+      });
+    });
+    const addBtn = tbl.querySelector('[data-addt]');
+    if(addBtn) addBtn.addEventListener('click', ()=>{
+      const modelo = S.modelos.find(m=>m.id===S.modeloAtivoId);
+      area.manualTapetes.push({id:area.nextManualId++, largura: modelo?modelo.largura:2, comprimento:1});
+      setupManualCanvas(area); renderAll();
+    });
+  }
+}
+function buildStripOverlay(area, rollWidth, vertices, pixelPoints, lineColor, textColor, shadowColor){
+  let s=''; 
+  if(area.strips.length===0) return s;
+  const dir = area.resolvedDirection;
+  const axisDim = dir==='horizontal'?'y':'x', lengthDim = dir==='horizontal'?'x':'y';
+  const sorted = [...area.strips].sort((a,c)=>a.bandStart-c.bandStart);
+  sorted.forEach((st,idx)=>{
+    const k = capSplit(st, rollWidth);
+    const isSplit = k>=2;
+    const topCross = nudgedCross(vertices, pixelPoints, axisDim, st.bandStart, lengthDim, 1);
+    const botCross = nudgedCross(vertices, pixelPoints, axisDim, st.bandEnd, lengthDim, -1);
+    if(topCross.length>=2 && botCross.length>=2){
+      const topL=topCross[0], topR=topCross[topCross.length-1], botL=botCross[0], botR=botCross[botCross.length-1];
+      if(isSplit){
+        for(let j=1;j<k;j++){
+          const f=j/k;
+          const pT=lerpPt(topL,topR,f), pB=lerpPt(botL,botR,f);
+          s += `<line x1="${pT.px}" y1="${pT.py}" x2="${pB.px}" y2="${pB.py}" stroke="${lineColor}" stroke-width="2" stroke-dasharray="8 6" opacity="0.95"/>`;
+        }
+        for(let j=0;j<k;j++){
+          const fm=(j+0.5)/k;
+          const pT=lerpPt(topL,topR,fm), pB=lerpPt(botL,botR,fm);
+          const mx=(pT.px+pB.px)/2, my=(pT.py+pB.py)/2;
+          s += `<text x="${mx}" y="${my}" font-size="14" fill="${textColor}" font-family="Space Grotesk,sans-serif" font-weight="700" text-anchor="middle" style="paint-order:stroke;stroke:${shadowColor};stroke-width:3px;">${letraTapete(idx)}${j+1}</text>`;
+        }
+      } else {
+        const mx=(topL.px+topR.px+botL.px+botR.px)/4, my=(topL.py+topR.py+botL.py+botR.py)/4;
+        s += `<text x="${mx}" y="${my}" font-size="15" fill="${textColor}" font-family="Space Grotesk,sans-serif" font-weight="700" text-anchor="middle" style="paint-order:stroke;stroke:${shadowColor};stroke-width:3px;">${letraTapete(idx)}</text>`;
+      }
+    }
+  });
+  for(let i=0;i<sorted.length-1;i++){
+    const cross = nudgedCross(vertices, pixelPoints, axisDim, sorted[i].bandEnd, lengthDim, 1);
+    if(cross.length>=2){
+      const l=cross[0], r=cross[cross.length-1];
+      s += `<line x1="${l.px}" y1="${l.py}" x2="${r.px}" y2="${r.py}" stroke="${lineColor}" stroke-width="2.5" stroke-dasharray="9 6" opacity="0.95"/>`;
+    }
+  }
+  return s;
+}
+// ---------- VENDA GLOBAL (todos os espaços juntos) ----------
+function packRolls(items, rollLen){
+  const sorted = [...items].sort((a,b)=>b.vendido-a.vendido);
+  const rolls=[];
+  sorted.forEach(t=>{
+    let placed=false;
+    for(const roll of rolls){
+      if(roll.used+t.vendido<=rollLen+1e-9){ roll.items.push(t); roll.used+=t.vendido; placed=true; break; }
+    }
+    if(!placed) rolls.push({items:[t], used:t.vendido});
+  });
+  return rolls;
+}
+function buildAllItems(rollWidth){
+  let purchaseItems=[]; let interSeamLength=0; let extraSeamLength=0; let areaSolicitadaReal=0; let emendaCount=0; let perimTotal=0;
+  S.areas.forEach(area=>{
+    if(area.vertices.length<3) return;
+    perimTotal += perimeter(area.vertices);
+
+    if(area.manualMode){
+      const list = area.manualTapetes;
+      if(list.length===0) return;
+      list.forEach((t,idx)=>{
+        const label = area.nome+' · '+letraTapete(idx);
+        areaSolicitadaReal += t.largura*t.comprimento;
+        purchaseItems.push({label, vendido:roundUpHalf(t.comprimento)});
+      });
+      for(let i=0;i<list.length-1;i++){
+        interSeamLength += Math.min(list[i].comprimento, list[i+1].comprimento);
+      }
+      emendaCount += Math.max(0, list.length-1);
+      return;
+    }
+
+    if(area.strips.length===0) return;
+    const sorted = [...area.strips].sort((a,b)=>a.bandStart-b.bandStart);
+    sorted.forEach((st,idx)=>{
+      const label = area.nome+' · '+letraTapete(idx);
+      areaSolicitadaReal += st.bandWidth*st.length;
+      const k = capSplit(st, rollWidth);
+      if(k>=2){
+        const segLen = st.length/k;
+        const vendidoSeg = roundUpHalf(segLen);
+        purchaseItems.push({label, vendido:vendidoSeg, note:'peça dividida em '+k+' partes ('+letraTapete(idx)+'1..'+letraTapete(idx)+k+')'});
+        extraSeamLength += st.bandWidth*(k-1);
+        emendaCount += (k-1);
+      } else {
+        purchaseItems.push({label, vendido:roundUpHalf(st.length)});
+      }
+    });
+    for(let i=0;i<sorted.length-1;i++){
+      const a=sorted[i], b=sorted[i+1];
+      const segStart=Math.max(a.lengthStart,b.lengthStart);
+      const segEnd=Math.min(a.lengthStart+a.length,b.lengthStart+b.length);
+      interSeamLength += Math.max(0,segEnd-segStart);
+    }
+    emendaCount += Math.max(0, sorted.length-1);
+  });
+  return {purchaseItems, interSeamLength, extraSeamLength, areaSolicitadaReal, emendaCount, perimTotal};
+}
+function renderAll(){
+  renderPlantasLimpas();
+  const modelo = S.modelos.find(m=>m.id===S.modeloAtivoId);
+  document.getElementById('s-modelo').textContent = modelo ? modelo.nome : '—';
+  const anyReady = S.areas.some(a=>(a.strips && a.strips.length>0) || (a.manualMode && a.manualTapetes.length>0));
+  if(!modelo || !anyReady){
+    ['s-rolos','s-vendida-linear','s-emendas','s-area-vendida','s-area-solicitada'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('plano-corte').innerHTML = '<div class="note">Feche a forma de algum espaço e preencha as larguras.</div>';
+    renderInsumos(0,0,0);
+    return;
+  }
+  const largura = modelo.largura, rollLen = modelo.comprimento||9999;
+  const { purchaseItems, interSeamLength, extraSeamLength, areaSolicitadaReal, emendaCount, perimTotal } = buildAllItems(largura);
+
+  const totalVendida = purchaseItems.reduce((s,t)=>s+t.vendido,0);
+  const areaVendida = totalVendida*largura;
+
+  const rolls = packRolls(purchaseItems, rollLen);
+  const rolosFechados = Math.max(0, rolls.length-1);
+
+  document.getElementById('s-rolos').textContent = rolosFechados+' + 1 aberto';
+  document.getElementById('s-vendida-linear').textContent = totalVendida.toFixed(2)+' m';
+  document.getElementById('s-emendas').textContent = emendaCount;
+  document.getElementById('s-area-vendida').textContent = areaVendida.toFixed(2);
+  document.getElementById('s-area-solicitada').textContent = areaSolicitadaReal.toFixed(2);
+
+  document.getElementById('plano-corte').innerHTML = rolls.map((roll,i)=>`
+    <div class="roll-block">
+      <div class="roll-title">Rolo ${i+1} — ${largura}m x ${rollLen}m</div>
+      ${roll.items.map(t=>`<div class="roll-item"><span>${t.label}</span><span>${largura}m x ${t.vendido.toFixed(2)}m</span></div>${t.note?`<div class="roll-note">↳ ${t.note}</div>`:''}`).join('')}
+    </div>`).join('');
+
+  renderInsumos(perimTotal, interSeamLength+extraSeamLength, areaSolicitadaReal);
+}
+
+// ---------- INSUMOS ----------
+document.querySelectorAll('.piso-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.piso-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    S.piso = btn.dataset.piso;
+    document.getElementById('insumo-ganchos-block').style.display = S.piso==='terra' ? 'block' : 'none';
+    document.getElementById('cola-label').textContent = S.piso==='terra' ? 'Cola de contato (emendas)' : 'Cola de contato (emendas + área toda)';
+    document.getElementById('cola-extra-cfg').textContent = S.piso==='terra' ? '' : '+ 200g/m² de área';
+    renderAll();
+  });
+});
+function pickBuckets(gramsNeeded){
+  if(gramsNeeded<=0) return {a:0,b:0,c:0,total:0,surplus:0,count:0};
+  const sizes=[14000,2800,700];
+  let best=null;
+  const maxBig = Math.min(60, Math.ceil(gramsNeeded/14000)+1);
+  for(let a=0;a<=maxBig;a++){
+    const remA = gramsNeeded - a*14000;
+    if(remA<=0){
+      const total=a*14000, surplus=total-gramsNeeded, count=a;
+      if(!best || surplus<best.surplus-1e-6 || (Math.abs(surplus-best.surplus)<1e-6 && count<best.count)) best={a,b:0,c:0,total,surplus,count};
+      continue;
+    }
+    const maxMed = Math.min(60, Math.ceil(remA/2800)+1);
+    for(let b=0;b<=maxMed;b++){
+      const remB = remA - b*2800;
+      const c = remB>0 ? Math.ceil(remB/700-1e-9) : 0;
+      const total = a*14000+b*2800+c*700;
+      if(total>=gramsNeeded-1e-6){
+        const surplus=total-gramsNeeded, count=a+b+c;
+        if(!best || surplus<best.surplus-1e-6 || (Math.abs(surplus-best.surplus)<1e-6 && count<best.count)) best={a,b,c,total,surplus,count};
+      }
+    }
+  }
+  return best;
+}
+function formatBuckets(pick){
+  if(!pick || pick.count===0) return '0 baldes';
+  const parts=[];
+  if(pick.a) parts.push(pick.a+'x 14kg');
+  if(pick.b) parts.push(pick.b+'x 2,8kg');
+  if(pick.c) parts.push(pick.c+'x 700g');
+  return parts.join(' + ');
+}
+function renderInsumos(perim, totalSeamLength, areaReal){
+  const fitaMetros = Math.ceil(totalSeamLength);
+  let colaGramas;
+  if(S.piso==='terra'){
+    const gRate = parseFloat(document.getElementById('rate-gancho').value)||0;
+    const kit = parseFloat(document.getElementById('kit-gancho').value)||1;
+    const ganchosNecessarios = Math.ceil(perim*gRate);
+    const kits = Math.ceil(ganchosNecessarios/kit);
+    document.getElementById('res-gancho').textContent = kits+' kit'+(kits!==1?'s':'')+' ('+(kits*kit)+' un)';
+    colaGramas = fitaMetros*130;
+  } else {
+    colaGramas = fitaMetros*130 + areaReal*200;
+  }
+  const pick = pickBuckets(colaGramas);
+  document.getElementById('res-cola').textContent = formatBuckets(pick);
+  document.getElementById('res-fita').textContent = fitaMetros+' m';
+  document.getElementById('insumo-base').textContent = 'Perímetro total: '+perim.toFixed(2)+' m · Cola necessária: '+Math.ceil(colaGramas)+' g (sobra ~'+Math.round(pick.surplus)+' g)';
+}
+['rate-gancho','kit-gancho'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderAll);
+});
+
+// ---------- MODELOS ----------
+async function loadModelos(){
+  try{
+    const r = await fetch('/api/modelos');
+    if(!r.ok) throw new Error('resposta '+r.status);
+    S.modelos = await r.json();
+  } catch(e){
+    console.error('Falha ao buscar modelos da API', e);
+    S.modelos = [];
+    document.getElementById('modelo-list').insertAdjacentHTML('afterend','<div class="note">⚠️ Não consegui falar com o servidor pra carregar o catálogo. Verifique sua conexão ou tente recarregar a página.</div>');
+  }
+  if(S.modelos.length>0) S.modeloAtivoId = S.modelos[0].id;
+  renderModelos();
+}
+function renderModelos(){
+  const list = document.getElementById('modelo-list');
+  list.innerHTML = S.modelos.map(m=>`
+    <div class="modelo-list-row">
+      <div>${m.nome}</div><div>${m.largura}m largura</div><div>${m.comprimento}m rolo</div>
+      <button class="rm-btn" data-rmmodelo="${m.id}">✕</button>
+    </div>`).join('');
+  list.querySelectorAll('[data-rmmodelo]').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      const id=parseInt(e.target.dataset.rmmodelo);
+      try{ await fetch('/api/modelos/'+id, {method:'DELETE'}); }
+      catch(err){ alert('Falha ao remover no servidor — tente novamente.'); return; }
+      S.modelos = S.modelos.filter(m=>m.id!==id);
+      renderModelos(); renderModeloSelect();
+    });
+  });
+  renderModeloSelect();
+}
+function renderModeloSelect(){
+  const sel = document.getElementById('modelo-ativo');
+  if(S.modelos.length===0){ sel.innerHTML='<option>Nenhum modelo cadastrado</option>'; return; }
+  sel.innerHTML = S.modelos.map(m=>`<option value="${m.id}">${m.nome} — ${m.largura}m x ${m.comprimento}m</option>`).join('');
+  if(!S.modeloAtivoId || !S.modelos.find(m=>m.id===S.modeloAtivoId)) S.modeloAtivoId = S.modelos[0].id;
+  sel.value = S.modeloAtivoId;
+  const modelo = S.modelos.find(m=>m.id===S.modeloAtivoId);
+  document.getElementById('modelo-info').textContent = modelo ? ('Largura fixa: '+modelo.largura+'m · Rolo de fábrica: '+modelo.comprimento+'m.') : '';
+  S.areas.forEach(area=>{ if(area.vertices.length>=3) recalcAreaStrips(area); });
+  renderAll();
+}
+document.getElementById('modelo-ativo').addEventListener('change', e=>{
+  S.modeloAtivoId = parseInt(e.target.value);
+  renderModeloSelect();
+});
+document.getElementById('add-modelo-btn').addEventListener('click', async ()=>{
+  const nome = document.getElementById('new-modelo-nome').value.trim();
+  const largura = parseFloat(document.getElementById('new-modelo-largura').value);
+  const comprimento = parseFloat(document.getElementById('new-modelo-comprimento').value)||0;
+  if(!nome || !largura){ alert('Preencha ao menos nome e largura.'); return; }
+  try{
+    const r = await fetch('/api/modelos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nome,largura,comprimento}) });
+    if(!r.ok) throw new Error('resposta '+r.status);
+    const novo = await r.json();
+    S.modelos.push(novo);
+    renderModelos();
+    document.getElementById('new-modelo-nome').value='';
+    document.getElementById('new-modelo-largura').value='';
+    document.getElementById('new-modelo-comprimento').value='';
+  } catch(e){
+    alert('Falha ao salvar o modelo no servidor — tente novamente.');
+  }
+});
+
+// INIT
+loadModelos().then(()=>{ addArea(); });
+</script>
+</body>
+</html>

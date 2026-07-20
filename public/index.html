@@ -95,8 +95,8 @@
       <h2>Catálogo de modelos <span class="tag">compartilhado com a equipe</span></h2>
       <div class="modelo-row">
         <input type="text" id="new-modelo-nome" placeholder="Nome (ex: Prime 30mm)">
-        <input type="number" step="0.1" id="new-modelo-largura" placeholder="Largura (m)">
-        <input type="number" step="0.5" id="new-modelo-comprimento" placeholder="Comp. rolo (m)">
+        <input type="text" inputmode="decimal" id="new-modelo-largura" placeholder="Largura (m)">
+        <input type="text" inputmode="decimal" id="new-modelo-comprimento" placeholder="Comp. rolo (m)">
         <span></span>
       </div>
       <button class="action small" id="add-modelo-btn">+ cadastrar modelo</button>
@@ -121,14 +121,6 @@
         <button class="action ghost small" id="area-reset-btn">Reiniciar desenho</button>
       </div>
       <div id="area-status" class="note"></div>
-
-      <label style="margin-top:16px">Orientação do corte</label>
-      <div class="tpl-btns">
-        <button class="tpl-btn active" data-eixo="auto">Automático (recomendado)</button>
-        <button class="tpl-btn" data-eixo="horizontal">Forçar: a partir da parede</button>
-        <button class="tpl-btn" data-eixo="vertical">Forçar: a partir da lateral</button>
-      </div>
-      <div class="note" id="eixo-status"></div>
     </div>
 
     <div class="card">
@@ -169,7 +161,7 @@
         <div class="insumo-card">
           <div>
             <div class="name">Ganchos</div>
-            <div class="cfg">un/m perímetro <input type="number" step="0.5" id="rate-gancho" value="1"> · un/kit <input type="number" step="1" id="kit-gancho" value="5"></div>
+            <div class="cfg">un/m perímetro <input type="text" inputmode="decimal" id="rate-gancho" value="1"> · un/kit <input type="text" inputmode="decimal" id="kit-gancho" value="5"></div>
           </div>
           <div class="result" id="res-gancho">—</div>
         </div>
@@ -335,7 +327,23 @@ function renderAreaTabs(){
 // ---------- WORKSPACE (rascunho) ----------
 const workSvg = document.getElementById('work-svg');
 function snapAngle(dx,dy){ let angle=Math.atan2(dy,dx); const step=Math.PI/12; return Math.round(angle/step)*step; }
-function snapCardinal(dx,dy){ let angle=Math.atan2(dy,dx); const step=Math.PI/2; return Math.round(angle/step)*step; }
+function parseNum(str){
+  if(str==null) return NaN;
+  if(typeof str==='number') return str;
+  const cleaned = String(str).trim().replace(',', '.');
+  const v = parseFloat(cleaned);
+  return v;
+}
+function angularDiff(a,b){ let d=(a-b)%(Math.PI*2); if(d>Math.PI) d-=Math.PI*2; if(d<-Math.PI) d+=Math.PI*2; return Math.abs(d); }
+// Ajusta o ângulo automaticamente: se o traço estiver perto de um ângulo reto (90°), assume reto;
+// caso contrário, respeita o ângulo desenhado (útil pra paredes/cercas realmente em diagonal).
+function smartSnapAngle(angleRaw){
+  const cardinalStep = Math.PI/2;
+  const nearestCardinal = Math.round(angleRaw/cardinalStep)*cardinalStep;
+  if(angularDiff(angleRaw, nearestCardinal) <= Math.PI/12){ return nearestCardinal; } // até 15° de folga
+  const fineStep = Math.PI/72;
+  return Math.round(angleRaw/fineStep)*fineStep;
+}
 function renderAreaWorkspace(){
   const area = getActiveArea();
   const nomeInput = document.getElementById('area-nome-input');
@@ -343,10 +351,9 @@ function renderAreaWorkspace(){
   if(!area){ nomeInput.value=''; nomeInput.disabled=true; photoInput.disabled=true; workSvg.innerHTML=''; document.getElementById('area-status').textContent='Crie um espaço pra começar.'; return; }
   nomeInput.disabled=false; photoInput.disabled=false;
   nomeInput.value = area.nome;
-  document.querySelectorAll('.tpl-btns [data-eixo]').forEach(b=>b.classList.toggle('active', b.dataset.eixo===area.direction));
   document.getElementById('area-status').textContent = area.statusMsg || '';
   renderWorkSvg(area);
-  renderCloseOptions(area.closed ? area : null);
+  renderCloseAutoOption(area.closed ? area : null);
 }
 document.getElementById('area-nome-input').addEventListener('input', e=>{
   const area=getActiveArea(); if(!area) return;
@@ -374,48 +381,67 @@ function renderWorkSvg(area){
     const first=area.points[0], last=area.points[area.points.length-1];
     s+=`<line x1="${last.x}" y1="${last.y}" x2="${first.x}" y2="${first.y}" stroke="#3F8F5F" stroke-width="3"/>`;
   }
+  // linhas "invisíveis" mais grossas por cima, só pra facilitar o clique em cada trecho
+  area.edges.forEach((edge,idx)=>{
+    const a=area.points[edge.from], b=area.points[edge.to];
+    s += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="transparent" stroke-width="18" class="edge-hit" data-edge="${idx}" style="cursor:pointer"/>`;
+  });
   area.points.forEach((p,i)=>{ s+=`<circle cx="${p.x}" cy="${p.y}" r="5" fill="${i===0?'#C98A3D':'#16302A'}" stroke="#fff" stroke-width="1.5"/>`; });
+
   const isLast = idx => idx===area.edges.length-1;
   area.edges.forEach((edge,idx)=>{
     const a=area.points[edge.from], b=area.points[edge.to];
     const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+
     if(edge.mode==='auto'){
-      s += `<foreignObject x="${mx-34}" y="${my-22}" width="70" height="46">
-        <div xmlns="http://www.w3.org/1999/xhtml" style="text-align:center;font-family:'Inter',sans-serif;">
-          <div style="font-size:9.5px;padding:3px 4px;border:1.5px dashed #C98A3D;border-radius:5px;background:#fff;color:#8a5a1f;">auto (fecha sozinho)</div>
-          <button data-modebtn="${idx}" style="margin-top:3px;font-size:9px;padding:2px 6px;border-radius:5px;border:1px solid #ccc;background:#fff;cursor:pointer;">mudar</button>
-        </div>
-      </foreignObject>`;
+      s += `<g><rect x="${mx-38}" y="${my-11}" width="76" height="20" rx="6" fill="#C98A3D"/>
+        <text x="${mx}" y="${my+4}" font-size="10" fill="#fff" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600">fecha sozinho</text></g>`;
       return;
     }
-    const val = edge.length!=null ? edge.length : '';
-    const modeLabel = edge.mode==='reto' ? '∟reto' : '↗livre';
-    s += `<foreignObject x="${mx-32}" y="${my-24}" width="68" height="48">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="text-align:center;">
-        <input type="number" step="0.05" class="edge-width-input" data-edge="${idx}" value="${val}" placeholder="largura m"
-          style="width:56px;font-size:11px;padding:3px 4px;border:1.5px solid #3F8F5F;border-radius:5px;text-align:center;font-family:'JetBrains Mono',monospace;background:#fff;"/>
-        <button data-modebtn="${idx}" style="margin-top:2px;font-size:9px;padding:2px 6px;border-radius:5px;border:1px solid #3F8F5F;background:${edge.mode==='reto'?'#16302A':'#fff'};color:${edge.mode==='reto'?'#fff':'#16302A'};cursor:pointer;">${modeLabel}</button>
-      </div>
-    </foreignObject>`;
+
+    if(area.selectedEdge===idx){
+      const val = edge.length!=null ? String(edge.length).replace('.',',') : '';
+      s += `<foreignObject x="${mx-34}" y="${my-14}" width="68" height="28">
+        <input xmlns="http://www.w3.org/1999/xhtml" type="text" inputmode="decimal" id="edge-input-live" class="edge-width-input" data-edge="${idx}" value="${val}" placeholder="ex: 9,20"
+          style="width:62px;font-size:12px;padding:4px 5px;border:1.5px solid #3F8F5F;border-radius:6px;text-align:center;font-family:'JetBrains Mono',monospace;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.15);"/>
+      </foreignObject>`;
+    } else if(edge.length!=null){
+      s += `<g><rect x="${mx-24}" y="${my-11}" width="48" height="20" rx="6" fill="#16302A" class="edge-hit" data-edge="${idx}" style="cursor:pointer"/>
+        <text x="${mx}" y="${my+4}" font-size="11" fill="#fff" text-anchor="middle" font-family="JetBrains Mono,monospace" font-weight="600" class="edge-hit" data-edge="${idx}" style="cursor:pointer">${edge.length.toFixed(2)}m</text></g>`;
+    } else {
+      s += `<g><rect x="${mx-30}" y="${my-11}" width="60" height="20" rx="6" fill="#fff" stroke="#C98A3D" stroke-width="1.5" stroke-dasharray="3 2" class="edge-hit" data-edge="${idx}" style="cursor:pointer"/>
+        <text x="${mx}" y="${my+4}" font-size="9.5" fill="#8a5a1f" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" class="edge-hit" data-edge="${idx}" style="cursor:pointer">toque p/ medir</text></g>`;
+    }
   });
   workSvg.innerHTML = s;
-  workSvg.querySelectorAll('[data-modebtn]').forEach(btn=>{
-    btn.addEventListener('click', ev=>{
-      ev.preventDefault();
-      const idx = parseInt(btn.dataset.modebtn);
-      const edge = area.edges[idx];
-      const last = isLast(idx);
-      const order = last ? ['livre','reto','auto'] : ['livre','reto'];
-      const next = order[(order.indexOf(edge.mode)+1)%order.length];
-      edge.mode = next;
+
+  workSvg.querySelectorAll('.edge-hit').forEach(el=>{
+    el.addEventListener('click', ev=>{
+      ev.stopPropagation();
+      const idx = parseInt(el.dataset.edge);
+      area.selectedEdge = idx;
       renderWorkSvg(area);
-      tryFinalize(area);
     });
   });
+  const liveInput = document.getElementById('edge-input-live');
+  if(liveInput){
+    liveInput.focus();
+    liveInput.select();
+    const commit = ()=>{
+      const idx = parseInt(liveInput.dataset.edge);
+      const v = parseNum(liveInput.value);
+      area.edges[idx].length = (v>0) ? v : null;
+      area.selectedEdge = null;
+      renderWorkSvg(area);
+      tryFinalize(area);
+    };
+    liveInput.addEventListener('blur', commit);
+    liveInput.addEventListener('keydown', ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); liveInput.blur(); } });
+  }
 }
 workSvg.addEventListener('click', e=>{
   const area=getActiveArea(); if(!area || area.closed) return;
-  if(e.target.closest('foreignObject')) return;
+  if(e.target.closest('.edge-hit') || e.target.closest('foreignObject')) return;
   const rect = workSvg.getBoundingClientRect();
   const x = (e.clientX-rect.left)/rect.width*400;
   const y = (e.clientY-rect.top)/rect.height*280;
@@ -427,7 +453,7 @@ workSvg.addEventListener('click', e=>{
   if(area.points.length>=2){
     const i=area.points.length-2;
     const a=area.points[i], b=area.points[i+1];
-    area.edges.push({angleRaw:Math.atan2(b.y-a.y,b.x-a.x), length:null, from:i, to:i+1, mode:'livre'});
+    area.edges.push({angleRaw:Math.atan2(b.y-a.y,b.x-a.x), length:null, from:i, to:i+1, mode:'reg'});
   }
   renderWorkSvg(area);
 });
@@ -436,25 +462,40 @@ function closeArea(area){
   area.closed = true;
   const n = area.points.length;
   const p0=area.points[0], pl=area.points[n-1];
-  area.edges.push({angleRaw:Math.atan2(p0.y-pl.y,p0.x-pl.x), length:null, from:n-1, to:0, mode:'livre'});
-  area.statusMsg = 'Digite a largura de cada trecho. Clique no botão embaixo da largura pra alternar entre "livre" (respeita o ângulo do seu traço) e "reto" (força 90° com o trecho anterior).';
+  area.edges.push({angleRaw:Math.atan2(p0.y-pl.y,p0.x-pl.x), length:null, from:n-1, to:0, mode:'reg'});
+  area.statusMsg = 'Toque em cada trecho pra digitar a largura real.';
   renderWorkSvg(area);
   document.getElementById('area-status').textContent = area.statusMsg;
+  renderCloseAutoOption(area);
+}
+function renderCloseAutoOption(area){
+  let el = document.getElementById('auto-close-wrap');
+  if(!el){
+    el = document.createElement('div');
+    el.id='auto-close-wrap';
+    el.className='note';
+    document.getElementById('area-status').insertAdjacentElement('afterend', el);
+  }
+  if(!area || !area.closed){ el.innerHTML=''; return; }
+  const lastEdge = area.edges[area.edges.length-1];
+  el.innerHTML = `<label style="display:flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer">
+    <input type="checkbox" id="auto-close-check" ${lastEdge.mode==='auto'?'checked':''} style="width:auto;margin:0">
+    Não sei o comprimento do fechamento — calcular automaticamente
+  </label>`;
+  document.getElementById('auto-close-check').addEventListener('change', ev=>{
+    lastEdge.mode = ev.target.checked ? 'auto' : 'reg';
+    if(!ev.target.checked) lastEdge.length=null;
+    area.selectedEdge=null;
+    renderWorkSvg(area);
+    tryFinalize(area);
+  });
 }
 document.getElementById('area-close-btn').addEventListener('click', ()=>{ const a=getActiveArea(); if(a) closeArea(a); });
 document.getElementById('area-reset-btn').addEventListener('click', ()=>{
   const area=getActiveArea(); if(!area) return;
-  area.points=[]; area.edges=[]; area.closed=false; area.vertices=[]; area.strips=[]; area.statusMsg='';
-  renderWorkSvg(area); document.getElementById('area-status').textContent=''; renderAll();
+  area.points=[]; area.edges=[]; area.closed=false; area.vertices=[]; area.strips=[]; area.statusMsg=''; area.selectedEdge=null;
+  renderWorkSvg(area); document.getElementById('area-status').textContent=''; renderCloseAutoOption(null); renderAll();
 });
-workSvg.addEventListener('input', e=>{
-  if(!e.target.classList.contains('edge-width-input')) return;
-  const area=getActiveArea(); if(!area) return;
-  const idx=parseInt(e.target.dataset.edge);
-  area.edges[idx].length = parseFloat(e.target.value)||null;
-  tryFinalize(area);
-});
-function angularDiff(a,b){ let d=(a-b)%(Math.PI*2); if(d>Math.PI) d-=Math.PI*2; if(d<-Math.PI) d+=Math.PI*2; return Math.abs(d); }
 function tryFinalize(area){
   if(!area.closed || area.edges.length<3) return;
   const needed = area.edges.filter(e=>e.mode!=='auto');
@@ -464,23 +505,7 @@ function tryFinalize(area){
     document.getElementById('area-status').textContent = area.statusMsg;
     return;
   }
-  // resolve ângulos em sequência: 'reto' depende do ângulo já resolvido do trecho anterior
-  const resolvedAngle = [];
-  for(let i=0;i<area.edges.length;i++){
-    const edge = area.edges[i];
-    if(edge.mode==='auto'){ resolvedAngle.push(null); continue; }
-    if(edge.mode==='reto'){
-      if(i===0 || resolvedAngle[i-1]==null){
-        const step=Math.PI/2; resolvedAngle.push(Math.round(edge.angleRaw/step)*step);
-      } else {
-        const base = resolvedAngle[i-1];
-        const optA = base+Math.PI/2, optB = base-Math.PI/2;
-        resolvedAngle.push(angularDiff(edge.angleRaw,optA) <= angularDiff(edge.angleRaw,optB) ? optA : optB);
-      }
-    } else { // livre — respeita o ângulo desenhado, só limpa ruído fino
-      const step=Math.PI/72; resolvedAngle.push(Math.round(edge.angleRaw/step)*step);
-    }
-  }
+  const resolvedAngle = area.edges.map(edge => edge.mode==='auto' ? null : smartSnapAngle(edge.angleRaw));
   const pts=[{x:0,y:0}];
   for(let i=0;i<area.edges.length;i++){
     const edge = area.edges[i];
@@ -499,32 +524,18 @@ function tryFinalize(area){
   area.vertices = pts.slice(0, pts.length-1);
   recalcAreaStrips(area);
   const hasAuto = area.edges.some(e=>e.mode==='auto');
-  area.statusMsg = (!hasAuto && gap>0.3) ? '⚠️ Fechamento com diferença de '+gap.toFixed(2)+'m — confira as larguras ou marque um trecho como "auto" pra fechar sozinho.' : '✓ Planta gerada, sempre em plano (sem distorção de perspectiva).';
+  area.statusMsg = (!hasAuto && gap>0.3) ? '⚠️ Fechamento com diferença de '+gap.toFixed(2)+'m — confira as larguras, ou marque a opção de fechamento automático.' : '✓ Planta gerada.';
   document.getElementById('area-status').textContent = area.statusMsg;
 }
 function recalcAreaStrips(area){
   const modelo = S.modelos.find(m=>m.id===S.modeloAtivoId);
   const rollWidth = modelo ? modelo.largura : 2;
   if(area.vertices.length<3){ area.strips=[]; renderAll(); return; }
-  if(area.direction==='auto'){
-    const best = chooseBestDirection(area.vertices, rollWidth);
-    area.strips = best.strips; area.resolvedDirection = best.dir;
-  } else {
-    area.strips = computeStrips(area.vertices, rollWidth, area.direction);
-    area.resolvedDirection = area.direction;
-  }
+  const best = chooseBestDirection(area.vertices, rollWidth);
+  area.strips = best.strips; area.resolvedDirection = best.dir;
   renderWorkSvg(area);
   renderAll();
 }
-document.querySelectorAll('.tpl-btns [data-eixo]').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const area=getActiveArea(); if(!area) return;
-    document.querySelectorAll('.tpl-btns [data-eixo]').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    area.direction = btn.dataset.eixo;
-    if(area.vertices.length>=3) recalcAreaStrips(area);
-  });
-});
 
 function backgroundAndScale(area){
   if(area.photo){
@@ -671,8 +682,8 @@ function setupManualCanvas(area){
     tbl.innerHTML = `<table style="margin-top:10px"><thead><tr><th>Tapete</th><th>Largura (m)</th><th>Comprimento (m)</th><th>Área</th><th></th></tr></thead>
       <tbody>${area.manualTapetes.map((t,idx)=>`<tr>
         <td>${letraTapete(idx)}</td>
-        <td><input type="number" step="0.05" value="${t.largura}" data-mt="${t.id}" data-field="largura"></td>
-        <td><input type="number" step="0.05" value="${t.comprimento}" data-mt="${t.id}" data-field="comprimento"></td>
+        <td><input type="text" inputmode="decimal" value="${t.largura}" data-mt="${t.id}" data-field="largura"></td>
+        <td><input type="text" inputmode="decimal" value="${t.comprimento}" data-mt="${t.id}" data-field="comprimento"></td>
         <td>${(t.largura*t.comprimento).toFixed(2)} m²</td>
         <td><button class="rm-btn" data-rmt="${t.id}">✕</button></td>
       </tr>`).join('')}</tbody></table>
@@ -681,7 +692,7 @@ function setupManualCanvas(area){
       inp.addEventListener('input', e=>{
         const id=parseInt(e.target.dataset.mt), field=e.target.dataset.field;
         const t = area.manualTapetes.find(x=>x.id===id);
-        if(t){ t[field]=parseFloat(e.target.value)||0; renderAll(); }
+        if(t){ t[field]=parseNum(e.target.value)||0; renderAll(); }
       });
     });
     tbl.querySelectorAll('[data-rmt]').forEach(btn=>{
@@ -883,8 +894,8 @@ function renderInsumos(perim, totalSeamLength, areaReal){
   const fitaMetros = Math.ceil(totalSeamLength);
   let colaGramas;
   if(S.piso==='terra'){
-    const gRate = parseFloat(document.getElementById('rate-gancho').value)||0;
-    const kit = parseFloat(document.getElementById('kit-gancho').value)||1;
+    const gRate = parseNum(document.getElementById('rate-gancho').value)||0;
+    const kit = parseNum(document.getElementById('kit-gancho').value)||1;
     const ganchosNecessarios = Math.ceil(perim*gRate);
     const kits = Math.ceil(ganchosNecessarios/kit);
     document.getElementById('res-gancho').textContent = kits+' kit'+(kits!==1?'s':'')+' ('+(kits*kit)+' un)';
@@ -950,8 +961,8 @@ document.getElementById('modelo-ativo').addEventListener('change', e=>{
 });
 document.getElementById('add-modelo-btn').addEventListener('click', async ()=>{
   const nome = document.getElementById('new-modelo-nome').value.trim();
-  const largura = parseFloat(document.getElementById('new-modelo-largura').value);
-  const comprimento = parseFloat(document.getElementById('new-modelo-comprimento').value)||0;
+  const largura = parseNum(document.getElementById('new-modelo-largura').value);
+  const comprimento = parseNum(document.getElementById('new-modelo-comprimento').value)||0;
   if(!nome || !largura){ alert('Preencha ao menos nome e largura.'); return; }
   try{
     const r = await fetch('/api/modelos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nome,largura,comprimento}) });

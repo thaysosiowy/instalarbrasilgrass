@@ -505,6 +505,7 @@ function tryFinalize(area){
     document.getElementById('area-status').textContent = area.statusMsg;
     return;
   }
+  const hasAuto = area.edges.some(e=>e.mode==='auto');
   const resolvedAngle = area.edges.map(edge => edge.mode==='auto' ? null : smartSnapAngle(edge.angleRaw));
   const pts=[{x:0,y:0}];
   for(let i=0;i<area.edges.length;i++){
@@ -520,11 +521,35 @@ function tryFinalize(area){
       pts.push({x:prev.x+edge.length*Math.cos(edge.angle), y:prev.y+edge.length*Math.sin(edge.angle)});
     }
   }
-  const gap = Math.hypot(pts[pts.length-1].x-pts[0].x, pts[pts.length-1].y-pts[0].y);
-  area.vertices = pts.slice(0, pts.length-1);
+  const rawGap = Math.hypot(pts[pts.length-1].x-pts[0].x, pts[pts.length-1].y-pts[0].y);
+  const perimeterSum = area.edges.reduce((s,e)=>s+(e.length||0),0);
+
+  let finalPts = pts;
+  if(!hasAuto && rawGap>1e-6){
+    // Regra de Bowditch (compass rule): distribui o erro de fechamento proporcionalmente
+    // ao comprimento de cada lado, em vez de deixar tudo escondido numa única aresta.
+    const err = {x:pts[pts.length-1].x-pts[0].x, y:pts[pts.length-1].y-pts[0].y};
+    let cumulative = 0;
+    finalPts = [pts[0]];
+    for(let i=0;i<area.edges.length;i++){
+      cumulative += area.edges[i].length;
+      const frac = perimeterSum>0 ? cumulative/perimeterSum : 0;
+      finalPts.push({ x: pts[i+1].x - err.x*frac, y: pts[i+1].y - err.y*frac });
+    }
+  }
+  area.vertices = finalPts.slice(0, finalPts.length-1);
   recalcAreaStrips(area);
-  const hasAuto = area.edges.some(e=>e.mode==='auto');
-  area.statusMsg = (!hasAuto && gap>0.3) ? '⚠️ Fechamento com diferença de '+gap.toFixed(2)+'m — confira as larguras, ou marque a opção de fechamento automático.' : '✓ Planta gerada.';
+
+  const bigGap = rawGap > Math.max(0.5, perimeterSum*0.1);
+  if(hasAuto){
+    area.statusMsg = '✓ Planta gerada.';
+  } else if(bigGap){
+    area.statusMsg = '⚠️ As larguras não fecham bem a forma (diferença de '+rawGap.toFixed(2)+'m) — confira as medidas, ou marque um trecho como fechamento automático.';
+  } else if(rawGap>0.02){
+    area.statusMsg = '✓ Planta gerada (pequeno ajuste de '+(rawGap*100).toFixed(0)+'cm distribuído entre os lados, normal em desenho aproximado).';
+  } else {
+    area.statusMsg = '✓ Planta gerada.';
+  }
   document.getElementById('area-status').textContent = area.statusMsg;
 }
 function recalcAreaStrips(area){
@@ -565,6 +590,7 @@ function renderPlantasLimpas(){
   const rollWidth = modelo ? modelo.largura : 2;
 
   wrap.innerHTML = valid.map(area=>{
+   try {
     let inner;
     if(area.manualMode){
       const {viewW,viewH,bgMarkup} = backgroundAndScale(area);
@@ -638,6 +664,13 @@ function renderPlantasLimpas(){
       <div class="planta-clean-wrap">${inner}</div>
       ${manualControls}
     </div>`;
+   } catch(err){
+    console.error('Falha ao desenhar a planta de', area.nome, err);
+    return `<div style="margin-bottom:18px" data-area-block="${area.id}">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">${area.nome}</div>
+      <div class="note">⚠️ Não consegui desenhar este espaço (erro interno). Os outros espaços continuam funcionando normalmente — tente reiniciar o desenho deste aqui.</div>
+    </div>`;
+   }
   }).join('');
 
   valid.forEach(area=>{
@@ -692,7 +725,7 @@ function setupManualCanvas(area){
       inp.addEventListener('input', e=>{
         const id=parseInt(e.target.dataset.mt), field=e.target.dataset.field;
         const t = area.manualTapetes.find(x=>x.id===id);
-        if(t){ t[field]=parseNum(e.target.value)||0; renderAll(); }
+        if(t){ t[field]=parseNum(e.target.value)||0; recalcVenda(); }
       });
     });
     tbl.querySelectorAll('[data-rmt]').forEach(btn=>{
@@ -812,6 +845,9 @@ function buildAllItems(rollWidth){
 }
 function renderAll(){
   renderPlantasLimpas();
+  recalcVenda();
+}
+function recalcVenda(){
   const modelo = S.modelos.find(m=>m.id===S.modeloAtivoId);
   document.getElementById('s-modelo').textContent = modelo ? modelo.nome : '—';
   const anyReady = S.areas.some(a=>(a.strips && a.strips.length>0) || (a.manualMode && a.manualTapetes.length>0));
